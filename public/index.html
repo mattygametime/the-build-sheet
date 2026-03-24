@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>The Build Sheet — Your Deal, Start to Finish</title>
+<!-- Open Graph / LinkedIn -->
+<meta property="og:type" content="website"/>
+<meta property="og:title" content="The Build Sheet"/>
+<meta property="og:description" content="The free project tracker for small-scale real estate developers. From dirt to doors, every phase, every checklist, every number — tracked."/>
+<meta property="og:image" content="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&h=630&fit=crop"/>
+<meta property="og:url" content=""/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="The Build Sheet"/>
+<meta name="twitter:description" content="The free project tracker for small-scale real estate developers. From dirt to doors."/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body,#root{height:100%;overflow:hidden;}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:#f8f8f7;color:#37352f;}
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#d3d3d0;border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:#b0b0ad;}
+input,textarea,select{font-family:inherit;}
+input::placeholder,textarea::placeholder{color:#b0aba5;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useCallback,useMemo,useRef,useEffect}=React;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DATA MODEL
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const PHASES=[
+{id:"market",name:"Walk the Dirt",icon:"🔍",weeks:[1,4],
+ summary:"Before you spend a dollar, wear out your shoes. Walk your target blocks until you know every lot, every zoning line, every broker by name. When a deal drops, you move while everyone else is still Googling.",
+ education:"Most people start by scrolling Zillow. Don't be most people. Pick 20 city blocks and own them mentally. Walk until you can name every lot, every zoning designation, every recent sale. When a broker calls with a deal, you should already know if it's worth your time before they finish the sentence. Before you fall in love with a site, check the dirt: flood plain status, steep slopes, wetlands, contaminated soil, and utility access can each kill a deal. Proximity to rivers means dewatering costs. Steep topography may only qualify as green space. Always verify who installs utilities, roads, and drainage — and whether sewer is municipal or requires on-site treatment.",
+ guide:["Identify target area aligned with investment goals","Walk/drive the neighborhood weekly to understand dynamics","Study zoning maps, HOA docs, and building regulations","Build broker relationships for early deal access","Evaluate walkability, amenities, transit proximity","Track long-term trends: infrastructure projects, government incentives","Check flood plain status, wetlands, and environmental constraints","Verify utility access: water, sewer (municipal vs. on-site), electric, gas","Assess topography — steep slopes dramatically increase costs","Note adjacent uses: wind tunnels, sewage proximity, protected species"],
+ checklist:[],
+ dealFields:[
+   {key:"targetArea",label:"Target Neighborhood / Area",type:"text",placeholder:"e.g. West Greenville, Village of West Greenville"},
+   {key:"targetBlocks",label:"Specific Blocks / Boundaries",type:"text",placeholder:"e.g. Between Augusta St and Pendleton St, from Main to Falls Park"},
+   {key:"assetType",label:"Target Asset Type",type:"select",options:["","Multifamily (2-4 units)","Multifamily (5-20 units)","Multifamily (20+ units)","Mixed-Use","Single-Family (fix & flip)","Single-Family (build)","Land / Ground-Up"]},
+   {key:"targetStrategy",label:"Strategy",type:"select",options:["","Buy & Hold","Build & Hold","Fix & Flip","Ground-Up Development","Adaptive Reuse"]}
+ ],
+ financialFields:[]
+},
+{id:"napkin-math",name:"Back of the Napkin",icon:"🧮",weeks:[1,2],
+ summary:"Four numbers decide if this deal lives or dies: units, rent, build cost, and land price. Grab a napkin. If it doesn't pencil here, no amount of architecture will save it.",
+ education:"Here's the cheat code: four numbers decide everything. (1) How many units can zoning support? (2) What do similar units rent for? (3) What does it cost to build per unit? (4) What's the land worth? Plug those in and you'll know in five minutes if this deal has legs. Operating expenses usually eat 35-40% of your gross. That's just the cost of running a building. Watch out for deals that look cheap but are upside-down — a $4M building with $6M in expenses and $500K in revenue is a trap regardless of purchase price. Only fundamental economics matter, not what the last guy paid.",
+ guide:["Verify zoning allows your proposed development","Estimate unit count from property size + zoning","Research comparable rents in the submarket","Calculate gross revenue (avg rent x units x 12)","Estimate operating expenses (~40%) to get NOI","Calculate project value (NOI ÷ cap rate)","Estimate total costs: land + construction + soft costs (25-30%)","Compare total costs to projected value: does it pencil?"],
+ checklist:[],
+ dealFields:[],
+ financialFields:[
+   {key:"purchasePrice",label:"Expected Purchase Price",type:"currency",placeholder:"0"},
+   {key:"unitCount",label:"Number of Units",type:"number",placeholder:"0"},
+   {key:"avgRent",label:"Average Monthly Rent per Unit",type:"currency",placeholder:"0"},
+   {key:"estimatedCostPerUnit",label:"Estimated Construction Cost per Unit",type:"currency",placeholder:"0"},
+   {key:"capRate",label:"Market Cap Rate (%)",type:"percent",placeholder:"e.g. 5.5"},
+   {key:"annualOpexPct",label:"Operating Expenses (% of Gross Revenue)",type:"percent",placeholder:"38"},
+   {key:"loanLTC",label:"Loan-to-Cost (%)",type:"percent",placeholder:"65"}
+ ],
+ calculations:true
+},
+{id:"research",name:"Pick Your Spot",icon:"📍",weeks:[2,4],
+ summary:"Your napkin says it works. Now prove it with real data. Is the population growing? Are incomes rising? Are rents climbing? Find the site that matches your ambition and your experience level.",
+ education:"Three questions to answer with data: (1) Is the population growing? (2) Are incomes rising? (3) Are home prices going up? If yes to all three, you likely have strong rental demand. Use Census data, local economic reports, and real estate databases. For your first deal, choose a manageable scale—don’t try to build 50 units right out of the gate. Pro tip: target developments under 200,000 buildable SF. Below that threshold, you avoid bidding wars with institutional capital while preventing market saturation in your neighborhood. Multi-use parcels (residential + retail) outperform single-use because amenities drive rents up across the board.",
+ guide:["Research population trends (Census data, local reports)","Evaluate local economic activity and job growth","Examine rental demand signals and vacancy rates","Check income stability and growth for target demographic","Analyze home price trends and rent-vs-buy differentials","Compare potential sites: zoning, size, walkability","Run financial analysis on top site candidates","Choose a manageable project scale for your experience level","Target under 200K buildable SF to avoid institutional competition","Evaluate multi-use potential (retail + residential = higher rents)","Order your own geotech and Phase 1 — never rely on the seller's reports"],
+ checklist:[],
+ dealFields:[
+   {key:"propertyAddress",label:"Property Address",type:"text",placeholder:"412 Augusta Street"},
+   {key:"propertyCity",label:"City / State",type:"text",placeholder:"Greenville, SC"},
+   {key:"lotSize",label:"Lot Size (sq ft or acres)",type:"text",placeholder:"e.g. 7,500 sq ft"},
+   {key:"currentZoning",label:"Current Zoning",type:"text",placeholder:"e.g. C-3, RM-2, PD"},
+   {key:"currentUse",label:"Current Use / Condition",type:"text",placeholder:"e.g. Vacant lot, mill house built 1940"}
+ ],
+ financialFields:[]
+},
+{id:"loi",name:"Shake Hands (LOI)",icon:"✉️",weeks:[1,2],
+ summary:"Align with the seller on price, earnest money, due diligence period, and closing date. This isn’t binding yet—but it sets the tone.",
+ education:"The LOI is your handshake before the legal paperwork. Key contingencies to include: clean title, satisfactory environmental reports, city approval for your intended use, and construction financing. Don’t shortchange your due diligence period—ask for 45-60 days minimum on development deals. Remember: the seller wants certainty of close. Show them you’re serious and organized. Negotiate deferred payment structures when possible—installment payments tied to milestones let you preserve capital during the riskiest phases. Avoid restrictions that limit your ability to bring in JV partners or recapitalize. And remember: leaving nothing on the table isn’t the mark of a good deal. Restructuring terms to work for both sides builds the relationships that feed your next deal.",
+ guide:["Research the owner’s background and establish rapport","Verify property ownership through public records","Draft LOI: price, earnest money, DD period, closing date","Include contingencies: title, environmental, city approval, financing","Have a real estate attorney review before sending","Negotiate terms, focus on mutual understanding","Ensure sufficient due diligence time (45-60 days minimum)","Explore deferred payment structures tied to milestones","Protect your right to bring in JV partners or recapitalize","Verify actual gross building envelope via public records, not marketing materials"],
+ checklist:[],
+ dealFields:[
+   {key:"askingPrice",label:"Asking Price",type:"currency",placeholder:"0"},
+   {key:"offerPrice",label:"Your Offer Price",type:"currency",placeholder:"0"},
+   {key:"earnestMoney",label:"Earnest Money Deposit",type:"currency",placeholder:"0"},
+   {key:"ddPeriodDays",label:"Due Diligence Period (days)",type:"number",placeholder:"45"},
+   {key:"targetCloseDate",label:"Target Close Date",type:"date",placeholder:""}
+ ],
+ financialFields:[]
+},
+{id:"purchase-agreement",name:"Lock It Down (PSA)",icon:"📝",weeks:[1,2],
+ summary:"Now the handshake becomes a contract. Get a sharp commercial RE attorney—this document is your armor. Every clause protects you or it doesn't belong.",
+ education:"Always start with a buyer-friendly PA. Your attorney should include: precise legal description, earnest money terms, inspection period, assignment clause (so you can assign to your LLC/project entity), seller reps and warranties, and clear closing cost allocation. The assignment clause is critical—you’ll likely close in a special-purpose entity, not your personal name. Contract terms are part of a system—they can’t be considered in a vacuum. In a GMP contract with shared savings, you must cap the contingency the GC can use, or they’ll burn through it and leave nothing to share. Define your negotiation goals before you walk in. Know which terms matter most and which ones you’ll trade. And establish environmental remediation responsibility in the PSA before you sign—not after.",
+ guide:["Engage commercial RE attorney experienced in development","Draft buyer-friendly PA converting LOI terms","Attach precise legal description of the property","Define earnest money amount and deposit timeline","Specify inspection period for all assessments","Include assignment clause for project entity","Incorporate seller representations and warranties","Detail closing costs allocation"],
+ checklist:[
+   {category:"Purchase & Sale",item:"Signed LOI (if relevant)?"},
+   {category:"Purchase & Sale",item:"Purchase & Sale Agreement"},
+   {category:"Purchase & Sale",item:"Escrow Instructions w any amendments"},
+   {category:"Purchase & Sale",item:"Estimated closing statement"}
+ ],
+ dealFields:[
+   {key:"attorney",label:"Attorney Name / Firm",type:"text",placeholder:""},
+   {key:"titleCompany",label:"Title Company",type:"text",placeholder:""},
+   {key:"entityName",label:"Purchasing Entity (LLC)",type:"text",placeholder:"e.g. 412 Augusta Street LLC"}
+ ],
+ financialFields:[]
+},
+{id:"due-diligence",name:"Kick the Tires",icon:"🔎",weeks:[4,8],
+ summary:"The make-or-break phase. Your DD checklist captures everything you’ve learned from past mistakes. Go through every single item before removing contingencies.",
+ education:"Over time, your DD checklist becomes the most important document in your business — it’s where your experience shows up as reduced risk. Before removing buyer contingencies, print this checklist. Review each line. Initial each box. If you can’t initial it, you’re not done yet.",
+ guide:["Print checklist and review slowly before removing contingencies","Order Phase 1 ESA (~$2,500), land survey ($4-5K), title commitment","Contact city planning to verify project support","Walk every unit, review all inspection reports","Drive by at night and on weekends","Review all leases, estoppels, delinquency reports","Get insurance quotes (flood/earthquake/fire zone)","Calculate projected post-closing property tax bill","Place geotech borings where you plan to build structures","Verify flood plain status and check for Army Corps permit requirements","Confirm utility will-serve letters are available","Check for retention pond and drainage requirements","Establish environmental remediation responsibility before removing contingencies"],
+ checklist:[
+   {category:"Title",item:"Review preliminary title report"},
+   {category:"Title",item:"Review underlying documents"},
+   {category:"Title",item:"Any recorded easements?"},
+   {category:"Title",item:"Any unrecorded easements? (power poles, shared driveway)"},
+   {category:"Title",item:"Do we need a survey?"},
+   {category:"Title",item:"Choose form of coverage"},
+   {category:"Title",item:"Object to any relevant exceptions to coverage"},
+   {category:"Title",item:"Review final title policy / supplements"},
+   {category:"Lot Info",item:"Check land size in public record against assessor’s map dimensions"},
+   {category:"Environmental",item:"Phase 1 ESA ordered / reviewed?"},
+   {category:"Environmental",item:"Phase 2 ESA needed?"},
+   {category:"Environmental",item:"Any oil wells or underground tanks on government websites?"},
+   {category:"Environmental",item:"Area contamination affecting subject property?"},
+   {category:"Structural",item:"Foundation inspection"},
+   {category:"Structural",item:"Slope or hillside issues"},
+   {category:"Structural",item:"Review for cracks or stresses"},
+   {category:"Structural",item:"Water intrusion and drainage inspection"},
+   {category:"Structural",item:"Subfloor problems"},
+   {category:"Structural",item:"Chimney and flue inspection (spark arrestor?)"},
+   {category:"Mechanical",item:"Sprinkler inspection"},
+   {category:"Mechanical",item:"HVAC inspection"},
+   {category:"Mechanical",item:"Plumbing and sewer line inspection"},
+   {category:"Mechanical",item:"Hot water heater(s) inspection"},
+   {category:"Electrical",item:"Confirm power adequacy"},
+   {category:"Electrical",item:"Electrical panels on insurance co bad list?"},
+   {category:"Electrical",item:"Proper subpanels and amperage?"},
+   {category:"Electrical",item:"Check wiring type"},
+   {category:"Electrical",item:"GFCIs present?"},
+   {category:"Electrical",item:"Grounded outlets and main panel ground?"},
+   {category:"Electrical",item:"Smoke detectors (wired?)"},
+   {category:"Electrical",item:"Carbon monoxide detectors (wired?)"},
+   {category:"Electrical",item:"What is separately metered?"},
+   {category:"Roof",item:"Condition / approximate age?"},
+   {category:"Roof",item:"Access?"},
+   {category:"Roof",item:"Drainage / gutters (where does water go?)"},
+   {category:"Pest",item:"New pest report ordered?"},
+   {category:"Pest",item:"Remediation required (wood rot, etc.)?"},
+   {category:"Architectural",item:"Copy of all available plans"},
+   {category:"Architectural",item:"Calculate/verify building square footage"},
+   {category:"Architectural",item:"As-builts available (if reconfiguring)?"},
+   {category:"Architectural",item:"Proposed layouts work with pro forma?"},
+   {category:"Interiors",item:"Walked every unit?"},
+   {category:"Interiors",item:"Reviewed inspection report?"},
+   {category:"Interiors",item:"Evidence of roof or plumbing leaks?"},
+   {category:"Interiors",item:"Any sign of mold?"},
+   {category:"Exterior",item:"Reviewed exterior inspection report?"},
+   {category:"Exterior",item:"Driveway / parking lot cracking?"},
+   {category:"Exterior",item:"Deck condition?"},
+   {category:"Exterior",item:"Pool / pool area / equipment?"},
+   {category:"Exterior",item:"Trees (trimming? problematic roots?)"},
+   {category:"Exterior",item:"Irrigation system condition?"},
+   {category:"Exterior",item:"Drainage: where does water go when it rains?"},
+   {category:"Neighborhood",item:"Adjacent properties with problematic uses?"},
+   {category:"Neighborhood",item:"Drive-by at night / weekend — any issues?"},
+   {category:"Neighborhood",item:"Neighborhood-wide nuisances (noise, smell)?"},
+   {category:"Neighborhood",item:"Nearby developments that could impact desirability?"},
+   {category:"Rehab",item:"Final rehab concept defined?"},
+   {category:"Rehab",item:"Reviewed quotes from GCs / subs?"},
+   {category:"Rehab",item:"Final rehab budget including holding costs?"},
+   {category:"Safety",item:"Cable & telephone service available?"},
+   {category:"Safety",item:"Quick release on window bars?"},
+   {category:"Safety",item:"ADA compliance?"},
+   {category:"Safety",item:"Exit signage / lighting?"},
+   {category:"Safety",item:"Fire extinguishers inspected / certified?"}
+ ],
+ dealFields:[],
+ financialFields:[
+   {key:"phase1Cost",label:"Phase 1 ESA Cost",type:"currency",placeholder:"2500"},
+   {key:"surveyCost",label:"Survey Cost",type:"currency",placeholder:"4500"},
+   {key:"inspectionCost",label:"Inspection Costs (total)",type:"currency",placeholder:"0"},
+   {key:"estimatedRehabBudget",label:"Estimated Rehab / Construction Budget",type:"currency",placeholder:"0"}
+ ]
+},
+{id:"zoning",name:"Get the Green Light",icon:"🏛️",weeks:[4,26],
+ summary:"You're not just building—you're asking a city for permission. Meet the officials, knock on neighbors' doors, and show up prepared. This phase tests your patience more than any construction delay ever will.",
+ education:"The entitlement process tests your patience and people skills. Give city officials the language and reasoning they need to support your project publicly. Meet with council members one-on-one before formal hearings. Address parking and traffic concerns before anyone raises them. Hold neighborhood meetings to build rapport. Don’t rush to file—show you’ve listened. Key economics: doubling your unit count generates more than 2x profit (same rent/SF, better cost absorption). Entitlements are where you unlock or destroy value. Always pursue as-of-right development when possible—rezoning is too uncertain for a business plan. And remember: zoning obsolescence is functional obsolescence. If a building can’t be used for anything the market wants, it approaches zero value.",
+ guide:["Verify current zoning and check for proposed changes","Determine if structure can be rebuilt under current zoning","Confirm all units/additions are legal (certificates of occupancy)","Verify parking requirements for existing and proposed use","Check for open violations (Housing, DBS, Health Dept)","Determine rent control status and affordability covenants","Meet city officials with your architect","Hold one-on-one neighbor meetings before formal hearings","Prepare for planning commission with supporting data","Address concerns head-on; give officials political cover"],
+ checklist:[
+   {category:"Zoning",item:"Verify current zoning"},
+   {category:"Zoning",item:"Proposed zoning changes that impact our use?"},
+   {category:"Zoning",item:"Historic preservation designation?"},
+   {category:"Zoning",item:"Can we rebuild under current zoning? Need rebuild letter?"},
+   {category:"Permits",item:"Copies of all permits"},
+   {category:"Permits",item:"Check for alternate addresses"},
+   {category:"Permits",item:"Certificate of occupancy"},
+   {category:"Permits",item:"All units and additions legal?"},
+   {category:"Parking",item:"Verify parking requirements (existing + proposed)"},
+   {category:"Parking",item:"Count existing parking"},
+   {category:"Parking",item:"Parking availability if no on-site parking?"},
+   {category:"Regulatory",item:"Open violations with Housing?"},
+   {category:"Regulatory",item:"Open violations with DBS?"},
+   {category:"Regulatory",item:"Open violations with Health Department?"},
+   {category:"Regulatory",item:"Rent control applies?"},
+   {category:"Regulatory",item:"Affordability covenants?"},
+   {category:"Opportunity Zone",item:"Check if property is in an opportunity zone"}
+ ],
+ dealFields:[
+   {key:"architect",label:"Architect Name / Firm",type:"text",placeholder:""},
+   {key:"landUseAttorney",label:"Land Use Attorney / Consultant",type:"text",placeholder:""}
+ ],
+ financialFields:[]
+},
+{id:"design",name:"Draw It Up",icon:"📐",weeks:[8,16],
+ summary:"Vision meets blueprint. Every material choice, every floor plan tweak, every system decision you lock down now saves you money and headaches on the job site.",
+ education:"Design is where you win or lose the deal. Revisit your pro forma—if you made concessions during entitlements (fewer units, more parking), does the deal still work? Then perfect floor plans through multiple iterations. MEP systems (mechanical, electrical, plumbing) are 20-30% of your budget—use a design-build approach where the GC manages the MEP subs for better accountability. Space efficiency is money: a standard building runs 110% gross SF to buildable, 90% net sellable. Optimized design hits 108% gross, 92% net—that 4-point improvement on a 140-unit building can mean 15+ additional units without adding building envelope. Smaller, more efficient units at slightly higher price-per-SF actually sell faster and expand your buyer pool. Right-size your amenities too—amenity bloat drives up HOA costs and kills absorption.",
+ guide:["Revisit pro forma after any entitlement concessions","Decide: build & hold, or sell?","Perfect floor plans for function and marketability","Maximize space efficiency and sight lines","Target 92%+ net sellable ratio (vs. standard 90%)","Increase unit count through better floor-plate design, not bigger building","Right-size amenities to reduce HOA costs ($1.40/SF target vs. $1.70 bloated)","Limit exterior to 3-4 cohesive materials","Keep interiors simple and versatile","Choose design-build approach for MEP","Plan for long-lead MEP items early","Use smaller efficient units to expand buyer pool and improve presales"],
+ checklist:[],
+ dealFields:[],
+ financialFields:[
+   {key:"architectFee",label:"Architect / Engineering Fees",type:"currency",placeholder:"0"},
+   {key:"permitFees",label:"Permit & Municipal Fees",type:"currency",placeholder:"0"}
+ ]
+},
+{id:"construction-docs",name:"Blueprint It",icon:"📋",weeks:[8,12],
+ summary:"This is the translation layer—your design becomes the document your GC actually builds from. The spec book is just as important as the drawings. Ambiguity here equals change orders later.",
+ education:"Construction documents are the blueprint (literally) for your build. The spec book is just as important as the drawings—it specifies exact materials and finishes so contractors can’t underbid by substituting cheaper alternatives. Review these documents carefully yourself. Ambiguity here = change orders later = cost overruns. Thorough, precise predevelopment documents can compress your construction timeline by months. Every decision you lock in on paper is one you don’t have to fight about in the field. Develop documented standards for material specs and contract language—reuse them on every project. Create custom contract templates with your legal counsel that include lender and investor requirements baked in.",
+ guide:["Finalize comprehensive construction documents with architect","Request detailed specification book for materials/finishes","Review documents thoroughly (contractors bid on these)","Consider long-term maintenance in material selections","Plan for 60-90 day timeline","Expect some back-and-forth during construction","Create reusable material spec standards for your company","Build custom contract templates with lender/investor requirements","Map every decision point before construction starts—assign ownership","Start FF&E procurement planning 12 months before construction completion"],
+ checklist:[],dealFields:[],financialFields:[]
+},
+{id:"find-gc",name:"Hire Your Builder",icon:"🔨",weeks:[3,6],
+ summary:"Get multiple bids, standardize them for comparison, and choose on experience and fit—not just price. The lowest bid often costs more in the end.",
+ education:"Request 3-5 bids and reformat them into a single spreadsheet so you can compare line by line. Watch for big discrepancies in mechanicals, site work, and concrete—these reveal either errors or different assumptions. For contract type, GMP (Guaranteed Maximum Price) is usually best for small developers: it caps your exposure while letting you share in savings. In a GMP with shared savings, cap the contingency the GC can access—otherwise they burn through it and there's nothing left to share. Set clear change order notification deadlines in the contract: there is no excuse for a change order to surface months after the work is done. When a GC 'forgot to buy scope,' that's their contingency problem, not a legitimate change order. And remember: the lowest bid often costs more in the end. A 21% IRR from an inexperienced builder is worth less than 17% from a team with three similar completions.",
+ guide:["Track which contractors do projects similar to yours","Request 3-5 bids on your construction documents","Standardize bids into comparable line-item format","Watch for discrepancies in mechanicals, site work, concrete","Evaluate track record, capacity, and site superintendent","Balance price with experience (lowest bid ≠ best)","Choose contract type: Lump Sum, GMP, or Cost Plus","Cap GC contingency access in GMP contracts to protect shared savings","Set change order notification deadlines in the contract","Include liquidated damages for delays","Verify GC can describe past project outcomes with specifics","Confirm proper insurance and get references from peers and subs"],
+ checklist:[],
+ dealFields:[
+   {key:"gcName",label:"Selected General Contractor",type:"text",placeholder:""},
+   {key:"contractType",label:"Contract Type",type:"select",options:["","Lump Sum","Guaranteed Maximum Price (GMP)","Cost Plus","Time & Materials"]}
+ ],
+ financialFields:[
+   {key:"hardCosts",label:"Hard Costs (Construction Contract)",type:"currency",placeholder:"0"},
+   {key:"contingency",label:"Contingency (%)",type:"percent",placeholder:"10"},
+   {key:"gcFee",label:"GC Fee (%)",type:"percent",placeholder:"5"}
+ ]
+},
+{id:"pro-forma",name:"The Scoreboard",icon:"📊",weeks:[1,52],
+ summary:"This is your project's vital signs monitor. It never stops updating. Every cost, every rent assumption, every financing term—it all lives here. If you're not checking this weekly, you're flying blind.",
+ education:"Your pro forma tracks everything: land cost, hard costs, soft costs (A&E, legal, permits, marketing), financing costs, and projected revenue. Key metrics to watch: Yield on Cost (stabilized NOI ÷ total project cost), Cash-on-Cash Return, and Debt Service Coverage Ratio (DSCR). If Yield on Cost exceeds the market cap rate, you’re creating value. Warning: most pro formas are missing 15-20% of actual costs. Commonly forgotten soft costs include: builder’s risk insurance ($200-400K), traffic studies ($30-60K), lender fees ($75-150K), project management (3-5% of costs), and pre-opening operating expenses (3-6 months). Budget contingency at 15% of hard costs and 10% of soft costs during planning, then tighten to 2-5% through construction as unknowns shrink.",
+ guide:["Track all costs: land, construction, municipal, A&E, marketing","Monitor per-unit cost to catch budget creep","Calculate projected revenue (rent + parking + other)","Account for vacancy (5-7%) and operating expenses (35-40%)","Track Yield on Cost as primary value-creation metric","Update as new data emerges","Maintain transparency for investors/stakeholders","Add commonly missed costs: builder's risk insurance, traffic studies, lender fees","Budget project management at 3-5% of total costs","Include pre-opening operating expenses (3-6 months)","Map capital requirements to specific milestones (don't request all equity upfront)","Call people who recently priced similar scopes when you lack confidence in comps"],
+ checklist:[],dealFields:[],
+ financialFields:[
+   {key:"softCostsPct",label:"Soft Costs (% of Hard Costs)",type:"percent",placeholder:"25"},
+   {key:"annualOpexPct",label:"Operating Expenses (% of Gross Revenue)",type:"percent",placeholder:"38"},
+   {key:"vacancyPct",label:"Vacancy Allowance (%)",type:"percent",placeholder:"5"},
+   {key:"otherMonthlyIncome",label:"Other Monthly Income (parking, laundry, etc.)",type:"currency",placeholder:"0"}
+ ]
+},
+{id:"capital-stack",name:"Fund the Build",icon:"💰",weeks:[4,12],
+ summary:"Time to stack the money. Lock your construction loan first—it tells you how much equity you need. Local lenders give you flexibility. Early believers give you patience. Rejections sharpen your pitch.",
+ education:"The capital stack = debt + equity. Construction loans are typically 60-75% of total project cost, 5-year term, floating rate, with 3 years interest-only. That means you need 25-40% in equity. For equity raises, prepare a professional offering memorandum with disclaimers, renderings, and projected returns. Persist through rejections—they refine your pitch. Present your IRR with context: show comparable exits and your team's track record. Investors trust specificity—walk in with a specific opening date, a line-by-line budget, and a risk-adjusted return rationale compared to current alternatives. Construction loan interest typically runs 5-6% of total construction cost. Map exact capital requirements to milestones rather than requesting all equity upfront—tying up capital for 12-18 months reduces your IRR by ~200 basis points.",
+ guide:["Start with local lenders who know your market","Prepare offering book: pro forma, business plan, renderings","Review term sheet: rate, LTC ratio, recourse/non-recourse","Align loan structure with business plan","Prepare offering memorandum for equity investors","Match investor expectations with timeline and returns","Persist through rejections","Prioritize early believers","Map capital calls to milestones—don't request all equity upfront","Present IRR with comparable exits and team track record","Include developer fee (typically 5% of hard + soft costs) in your structure","Create a one-page investment memo first, then build the full offering doc"],
+ checklist:[
+   {category:"Insurance",item:"Insurance quote(s) obtained?"},
+   {category:"Insurance",item:"In flood zone? Flood insurance needed?"},
+   {category:"Insurance",item:"Earthquake insurance?"},
+   {category:"Insurance",item:"Other hazards? (fire severity, liquefaction)"},
+   {category:"Taxes",item:"Projected post-closing tax bill matches pro forma?"},
+   {category:"Financing",item:"Static analysis complete?"},
+   {category:"Financing",item:"Multiple scenarios and sensitivities prepared?"},
+   {category:"Financing",item:"Op zone: pass substantial improvement test?"},
+   {category:"Loan",item:"Loan quote received?"},
+   {category:"Loan",item:"Pro forma shared with lender?"},
+   {category:"Loan",item:"Rate locked?"}
+ ],
+ dealFields:[
+   {key:"lender",label:"Lender",type:"text",placeholder:""},
+   {key:"loanBroker",label:"Loan Broker (if any)",type:"text",placeholder:""}
+ ],
+ financialFields:[
+   {key:"loanLTC",label:"Loan-to-Cost Ratio (%)",type:"percent",placeholder:"65"},
+   {key:"interestRate",label:"Interest Rate (%)",type:"percent",placeholder:"7.5"},
+   {key:"loanTermYears",label:"Loan Term (years)",type:"number",placeholder:"5"},
+   {key:"equityFromDeveloper",label:"Your Equity Contribution",type:"currency",placeholder:"0"}
+ ]
+},
+{id:"tenancy",name:"Know Your Tenants",icon:"🏠",weeks:[2,4],
+ summary:"If there are tenants in the building, you need to verify everything the seller told you. Estoppels are your truth serum. If the rent roll doesn't match the leases, you've got a problem.",
+ education:"Estoppels are your truth serum. They require each tenant to confirm (in writing) the terms of their lease, current rent, and any agreements with the landlord. Compare these against the seller’s rent roll. Discrepancies = red flags. Also check for RUBS (Ratio Utility Billing System) language—this can meaningfully boost NOI if tenants pay a share of utilities.",
+ guide:["Review all leases (amendments, assignments, sub-leases)","Check for RUBS language in leases","Review tenant estoppels against seller’s rent roll","Pull and review delinquency report","Check for on-going evictions","Compare seller rent statement to leases/estoppels for escrow proration"],
+ checklist:[
+   {category:"Tenancy",item:"All leases reviewed (incl. amendments)?"},
+   {category:"Tenancy",item:"RUBS language in leases?"},
+   {category:"Tenancy",item:"Estoppels reviewed?"},
+   {category:"Tenancy",item:"Delinquency report checked?"},
+   {category:"Tenancy",item:"On-going evictions? Cases assignable?"},
+   {category:"Tenancy",item:"Rent statement matches leases/estoppels?"}
+ ],
+ dealFields:[],financialFields:[]
+},
+{id:"closing",name:"Close & Break Ground",icon:"🔑",weeks:[1,2],
+ summary:"This is launch day. Attorney has the paperwork, equity is wired, contracts are signed, GC is ready to roll. The moment you close, the clock starts. No delays.",
+ education:"Have your GC ready to mobilize on day one. Pre-construction survey the site to document existing conditions (this prevents disputes later). Call in equity 2-3 weeks before close—some investors are slow with wires. And yes: celebrate. You earned it.",
+ guide:["Coordinate all paperwork with attorney","Call in equity 2-3 weeks before close","Confirm architect and GC contracts are signed","Prepare site: disconnect utilities, pre-construction survey","GC ready to start work immediately post-close","Celebrate!"],
+ checklist:[
+   {category:"Financials",item:"Seller’s P&L reviewed (last year + TTM)?"},
+   {category:"Financials",item:"PM company budget reviewed?"},
+   {category:"Disclosures",item:"Required seller disclosures confirmed?"},
+   {category:"Disclosures",item:"PSA disclosure requirements met?"},
+   {category:"Service Agreements",item:"Laundry lease?"},
+   {category:"Service Agreements",item:"Elevator service contract?"},
+   {category:"Service Agreements",item:"Fire panel service contract?"},
+   {category:"Service Agreements",item:"Sprinkler service contract?"},
+   {category:"Service Agreements",item:"Additional service contracts?"},
+   {category:"Service Agreements",item:"Landscaping agreement?"},
+   {category:"Service Agreements",item:"Trash agreement?"}
+ ],
+ dealFields:[],financialFields:[]
+},
+{id:"construction",name:"Build It",icon:"🏗️",weeks:[26,78],
+ summary:"Boots on the ground. Show up to every weekly meeting, walk the site on quiet weekends, question everything, and never approve a payment for work you haven't seen. This is where builders earn their returns.",
+ education:"Equity gets spent before loan draws begin. For pay applications: the contractor submits, the architect verifies the work is done, then you approve payment. Never pay for unverified work. Change orders come out of your contingency—track them obsessively. Walk the site on quiet weekends; you’ll notice things the group walks miss. When reviewing change orders, separate two questions: (1) is the change contractually warranted? and (2) is the cost breakdown accurate? Audit for common billing errors: materials charged to the wrong project, double-counted assemblies, incorrect material takeoffs, labor rates that don’t match the contract, and—the most frequent mistake—the wrong markup vs. what was agreed. Track costs independently via monthly anticipated cost reports. Don’t rely solely on the contractor’s accounting.",
+ guide:["Attend weekly Owner-Architect-Contractor meetings","Walk site frequently (groups + solo on weekends)","Respond to RFIs quickly and clearly","Verify work before approving pay applications","Track change orders against contingency","Submit organized loan draws","Stay curious—good questions uncover better solutions","Audit every change order: check for double-counted assemblies and wrong markups","Maintain your own monthly anticipated cost report (don't rely on GC accounting)","When GC forgot to buy scope, that's their contingency—not a change order","Review and comment on construction schedule regularly","Negotiate schedule extensions with capped general conditions to control costs"],
+ checklist:[],dealFields:[],financialFields:[]
+},
+{id:"branding",name:"Name It & Sell It",icon:"🎨",weeks:[8,16],
+ summary:"Your building needs an identity before it needs tenants. Start this at 50% construction—by the time you're done building, your website, brand, and listings should be live and driving traffic.",
+ education:"Start this at the halfway mark of construction. By the time you’re handing over keys, your website, SEO, and apartment listings should be cranking. Budget $3-7K/month for Google SEO during lease-up—this is your lead engine. Professional photos, interactive floor plans, and a banner on the building catch the local foot traffic. Don’t wait until you have a CO to start marketing. Properly sizing units helps avoid too-high price points and excess inventory holding—that’s the biggest risk in development. Keep 90% of units in your market’s sweet spot price range. Smaller efficient units at slightly higher price-per-SF sell faster and expand your buyer pool. Timeless materials applied thoughtfully, efficient layouts, and right-sized amenities are what separate projects that sell from projects that sit.",
+ guide:["Hire branding firm to create building identity","Develop name, logo, colors; verify domain availability","Build professional website with floor plans + virtual tours","Budget $3-7K/month for Google SEO","List on Apartments.com, Zillow, CoStar","Use Instagram and TikTok for content","Place banners on building during construction"],
+ checklist:[],dealFields:[],
+ financialFields:[{key:"marketingBudget",label:"Total Marketing Budget",type:"currency",placeholder:"0"}]
+},
+{id:"lease-up",name:"Fill the Building",icon:"📑",weeks:[8,16],
+ summary:"Leasing is sales, not property management. Hire closers, stage at least one unit, set your rent schedule by walking every floor, and track conversions like a startup tracks sign-ups.",
+ education:"Leasing agents are salespeople—don’t use your property manager for this. Pre-leasing can secure tenants early but risks frustration if construction delays hit. Stage at least one model unit; most tenants can’t visualize an empty space. Walk the entire building with your leasing team to set per-unit pricing based on floor, view, and layout differences.",
+ guide:["Hire specialized leasing agents (not property managers)","Evaluate pre-leasing vs. waiting for completion","Walk building with leasing team to set per-unit rents","Stage model units","Maintain weekly reporting calls","Adjust strategy based on tour volume and conversion"],
+ checklist:[],dealFields:[],financialFields:[]
+},
+{id:"property-mgmt",name:"Run the Building",icon:"🏢",weeks:[0,52],
+ summary:"You built it. Now run it right. Fast maintenance response, clean books, and a manager who knows the local market. For your first few buildings, outsource this so you can focus on the next deal.",
+ education:"For your first few properties, a third-party manager makes sense—it frees you to focus on the next deal. Look for local firms with experience in your asset class. Review the management agreement for termination clauses and make sure they carry proper E&O insurance. Typical management fees run 4-8% of collected rents.",
+ guide:["Choose in-house vs. third-party based on portfolio size","Assemble onsite team for daily operations","Establish accounting and financial reporting","Prioritize fast maintenance response","Choose firm with local expertise","Review management agreement thoroughly"],
+ checklist:[
+   {category:"Management",item:"Property manager identified?"},
+   {category:"Management",item:"Quote for service received?"}
+ ],
+ dealFields:[{key:"propertyManager",label:"Property Management Company",type:"text",placeholder:""}],
+ financialFields:[{key:"mgmtFeePct",label:"Management Fee (% of collected rents)",type:"percent",placeholder:"6"}]
+},
+{id:"asset-mgmt",name:"Harvest the Value",icon:"📈",weeks:[0,520],
+ summary:"This is the payoff. Hit 90% occupancy for three months, then decide: refinance and pull cash out, or sell and capture the value you created. Every decision from here is about maximizing what you built.",
+ education:"Stabilization = 90%+ occupancy for three consecutive months. Once stabilized, you can refinance the construction loan into permanent financing (Fannie Mae, Freddie Mac). This is where you unlock the value created during development. If Yield on Cost > market cap rate, you’ve created real equity. Decide whether to harvest that through a cash-out refi or a sale based on market timing and investor goals. Development creates value through the design, construction, and sales process—not from speculating on future cap rate compression or NOI growth. That makes your returns structurally independent from most macro headwinds. Each step deserves its own profit margin: master planning, vertical development, and stabilization/operations. Don’t perform all three steps for single-step returns.",
+ guide:["Determine strategy: hold or sell","Achieve stabilization (90%+ occupancy x 3 months)","Explore permanent financing (Fannie/Freddie)","Reassess market conditions regularly","If selling, engage experienced brokers","Monitor long-term financial performance"],
+ checklist:[],dealFields:[],financialFields:[]
+}
+];
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE DEPENDENCIES & CRITICAL PATH
+   ═══════════════════════════════════════════════════════════════════════════ */
+// deps: phases that must be complete before this one can start
+// parallel: phases that typically run concurrently with this one
+const DEPS={
+  "market":        {deps:[],parallel:["napkin-math"]},
+  "napkin-math":   {deps:["market"],parallel:["market"]},
+  "research":      {deps:["napkin-math"],parallel:[]},
+  "loi":           {deps:["research"],parallel:[]},
+  "purchase-agreement":{deps:["loi"],parallel:[]},
+  "due-diligence": {deps:["purchase-agreement"],parallel:["zoning","tenancy"]},
+  "zoning":        {deps:["purchase-agreement"],parallel:["due-diligence","design"]},
+  "design":        {deps:["due-diligence"],parallel:["zoning","construction-docs"]},
+  "construction-docs":{deps:["design"],parallel:["find-gc"]},
+  "find-gc":       {deps:["design"],parallel:["construction-docs"]},
+  "pro-forma":     {deps:["napkin-math"],parallel:[]},
+  "capital-stack": {deps:["pro-forma","find-gc"],parallel:[]},
+  "tenancy":       {deps:["purchase-agreement"],parallel:["due-diligence"]},
+  "closing":       {deps:["due-diligence","capital-stack","zoning"],parallel:[]},
+  "construction":  {deps:["closing","find-gc","construction-docs"],parallel:["branding"]},
+  "branding":      {deps:["design"],parallel:["construction"]},
+  "lease-up":      {deps:["branding","construction"],parallel:[]},
+  "property-mgmt": {deps:["lease-up"],parallel:[]},
+  "asset-mgmt":    {deps:["property-mgmt"],parallel:[]}
+};
+
+// The critical path: the longest chain of sequential dependencies that determines project duration
+const CRITICAL_PATH=["market","napkin-math","research","loi","purchase-agreement","due-diligence","design","construction-docs","find-gc","capital-stack","closing","construction","lease-up","property-mgmt","asset-mgmt"];
+
+function getPhaseStatus(phaseId,phaseTotals,checked){
+  const dep=DEPS[phaseId];
+  if(!dep)return{status:"ready",blockers:[]};
+  const blockers=[];
+  for(const d of dep.deps){
+    const t=phaseTotals[d];
+    if(t&&t.total>0&&t.done<t.total){
+      const p=PHASES.find(x=>x.id===d);
+      blockers.push(p?p.name:d);
+    }
+  }
+  if(blockers.length>0)return{status:"blocked",blockers};
+  return{status:"ready",blockers:[]};
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COLORS (Notion-inspired light theme)
+   ═══════════════════════════════════════════════════════════════════════════ */
+const T={
+  bg:"#ffffff",pageBg:"#f8f8f7",
+  sidebar:"#fbfbfa",sidebarBorder:"#e8e5e0",
+  text:"#37352f",textSecondary:"#787774",textTertiary:"#b0aba5",
+  accent:"#2383e2",accentBg:"rgba(35,131,226,0.08)",accentBorder:"rgba(35,131,226,0.25)",
+  green:"#0f7b0f",greenBg:"rgba(15,123,15,0.08)",greenBorder:"rgba(15,123,15,0.25)",
+  amber:"#d9730d",amberBg:"rgba(217,115,13,0.08)",
+  red:"#e03e3e",redBg:"rgba(224,62,62,0.06)",
+  purple:"#6940a5",purpleBg:"rgba(105,64,165,0.08)",
+  border:"#e8e5e0",borderLight:"#f1efe9",
+  cardBg:"#ffffff",cardShadow:"0 1px 3px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.04)",
+  inputBg:"#f8f8f7",inputBorder:"#e3e2de",
+  tagBg:"#f1f1ef",
+  eduBg:"#f6f5f0",eduBorder:"#e8e5df"
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════════════════════════ */
+function fmt(n){if(n==null||isNaN(n))return"$0";return"$"+Number(n).toLocaleString("en-US",{maximumFractionDigits:0});}
+function pct(n){if(n==null||isNaN(n))return"0%";return Number(n).toFixed(1)+"%";}
+
+function calcFinancials(deal){
+  const p=parseFloat(deal.purchasePrice)||0;
+  const units=parseInt(deal.unitCount)||0;
+  const rent=parseFloat(deal.avgRent)||0;
+  const costPerUnit=parseFloat(deal.estimatedCostPerUnit)||0;
+  const capRate=(parseFloat(deal.capRate)||5.5)/100;
+  const hardCosts=parseFloat(deal.hardCosts)||0;
+  const softPct=deal.softCostsPct!=null&&deal.softCostsPct!==""?(parseFloat(deal.softCostsPct)/100):0;
+  const opexPct=(parseFloat(deal.annualOpexPct)||38)/100;
+  const vacPct=(parseFloat(deal.vacancyPct)||5)/100;
+  const otherInc=parseFloat(deal.otherMonthlyIncome)||0;
+  const ltc=(parseFloat(deal.loanLTC)||65)/100;
+  const rate=(parseFloat(deal.interestRate)||7.5)/100;
+  const devEquity=parseFloat(deal.equityFromDeveloper)||0;
+
+  const grossMonthly=(units*rent)+otherInc;
+  const grossAnnual=grossMonthly*12;
+  const effectiveGross=grossAnnual*(1-vacPct);
+  const opex=effectiveGross*opexPct;
+  const noi=effectiveGross-opex;
+
+  const napkinConstruction=units*costPerUnit;
+  const actualHard=hardCosts||napkinConstruction;
+  const softCosts=actualHard*softPct;
+  const totalProjectCost=p+actualHard+softCosts;
+  const projectedValue=capRate>0?noi/capRate:0;
+  const profit=projectedValue-totalProjectCost;
+  const yieldOnCost=totalProjectCost>0?(noi/totalProjectCost)*100:0;
+
+  const loanAmount=totalProjectCost*ltc;
+  const equityNeeded=totalProjectCost-loanAmount;
+  const annualDebtService=loanAmount*rate;
+  const dscr=annualDebtService>0?noi/annualDebtService:0;
+  const cashFlow=noi-annualDebtService;
+  const coc=equityNeeded>0?(cashFlow/equityNeeded)*100:0;
+
+  return{grossMonthly,grossAnnual,effectiveGross,opex,noi,totalProjectCost,actualHard,softCosts,projectedValue,profit,yieldOnCost,loanAmount,equityNeeded,annualDebtService,dscr,cashFlow,coc,devEquity};
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COMPONENTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function ProgressBar({value,max,color=T.accent,height=4}){
+  const pct=max>0?Math.round((value/max)*100):0;
+  return(
+    <div style={{height,borderRadius:height/2,background:T.borderLight,overflow:"hidden",width:"100%"}}>
+      <div style={{height:"100%",width:pct+"%",background:color,borderRadius:height/2,transition:"width 0.3s ease"}}/>
+    </div>
+  );
+}
+
+function Tag({children,color=T.textSecondary,bg=T.tagBg}){
+  return <span style={{display:"inline-block",padding:"2px 8px",borderRadius:4,fontSize:11,fontWeight:500,color,background:bg,whiteSpace:"nowrap"}}>{children}</span>;
+}
+
+function Field({label,type,value,onChange,placeholder,options,tip}){
+  const base={width:"100%",background:T.inputBg,border:"1px solid "+T.inputBorder,borderRadius:6,padding:"8px 12px",fontSize:14,color:T.text,outline:"none",fontFamily:"inherit"};
+  return(
+    <div style={{marginBottom:12}}>
+      <label style={{display:"block",fontSize:12,fontWeight:500,color:T.textSecondary,marginBottom:4}}>{label}</label>
+      {type==="select"?(
+        <select value={value||""} onChange={e=>onChange(e.target.value)} style={{...base,cursor:"pointer"}}>
+          {options.map(o=><option key={o} value={o}>{o||"Select..."}</option>)}
+        </select>
+      ):type==="textarea"?(
+        <textarea value={value||""} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={3} style={{...base,resize:"vertical"}}/>
+      ):(
+        <input type={type==="date"?"date":"text"} value={value||""} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
+          style={{...base}} onFocus={e=>{if(type==="currency"&&!value)onChange("");}} />
+      )}
+      {tip&&<div style={{fontSize:11,color:T.textTertiary,marginTop:2}}>{tip}</div>}
+    </div>
+  );
+}
+
+function Checkbox({checked,onClick,label,strikethrough=true}){
+  return(
+    <div onClick={onClick} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"7px 0",cursor:"pointer",userSelect:"none"}}>
+      <div style={{
+        width:18,height:18,borderRadius:4,border:"1.5px solid "+(checked?T.green:T.border),
+        background:checked?T.greenBg:"transparent",display:"flex",alignItems:"center",justifyContent:"center",
+        flexShrink:0,marginTop:1,transition:"all 0.15s ease"
+      }}>
+        {checked&&<svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke={T.green} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+      </div>
+      <span style={{fontSize:14,color:checked&&strikethrough?T.textTertiary:T.text,textDecoration:checked&&strikethrough?"line-through":"none",lineHeight:1.5,transition:"color 0.15s ease"}}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function GanttChart({phases,activePhase,checked,phaseTotals,onClickPhase}){
+  // Exclude long-tail phases from the chart (asset-mgmt, property-mgmt)
+  const chartPhases=phases.filter(p=>p.weeks[1]<=104);
+  // Position phases using cumulative offsets of minimum durations
+  let cum=0;
+  const positioned=[];
+  for(let i=0;i<chartPhases.length;i++){
+    const p=chartPhases[i];
+    const dur=p.weeks[1];
+    const t=phaseTotals[p.id];
+    const pctDone=t&&t.total>0?Math.round((t.done/t.total)*100):0;
+    const isCritical=CRITICAL_PATH.includes(p.id);
+    const depStatus=getPhaseStatus(p.id,phaseTotals,checked);
+    positioned.push({...p,start:cum,dur,pctDone,isCritical,depStatus});
+    cum+=Math.max(p.weeks[0],1);
+  }
+  const maxEnd=Math.max(...positioned.map(r=>r.start+r.dur));
+  const scale=maxEnd||104;
+  // Tick marks every ~13 weeks
+  const ticks=[];
+  for(let w=0;w<=scale;w+=13)ticks.push(w);
+  if(ticks[ticks.length-1]<scale)ticks.push(Math.ceil(scale));
+
+  // Long-tail phases shown as summary row
+  const longTail=phases.filter(p=>p.weeks[1]>104);
+
+  return(
+    <div style={{overflowX:"auto",padding:"0 0 8px"}}>
+      {/* Legend */}
+      <div style={{display:"flex",gap:16,marginBottom:10,fontSize:11,color:T.textTertiary}}>
+        <span><span style={{display:"inline-block",width:10,height:10,borderRadius:2,background:"rgba(224,62,62,0.18)",border:"1.5px solid "+T.red,marginRight:4,verticalAlign:"middle"}}/> Critical path</span>
+        <span><span style={{display:"inline-block",width:10,height:10,borderRadius:2,background:"rgba(35,131,226,0.25)",border:"1.5px solid "+T.accent,marginRight:4,verticalAlign:"middle"}}/> Active</span>
+        <span><span style={{display:"inline-block",width:10,height:10,borderRadius:2,background:"rgba(15,123,15,0.3)",border:"1.5px solid "+T.green,marginRight:4,verticalAlign:"middle"}}/> Complete</span>
+        <span><span style={{display:"inline-block",width:10,height:10,borderRadius:2,background:"rgba(0,0,0,0.06)",border:"1.5px solid #d3d3d0",marginRight:4,verticalAlign:"middle"}}/> Waiting</span>
+      </div>
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"center",padding:"0 0 8px",borderBottom:"1px solid "+T.border,marginBottom:4}}>
+        <div style={{width:220,flexShrink:0,fontSize:11,fontWeight:600,color:T.textSecondary,textTransform:"uppercase",letterSpacing:"0.05em"}}>Phase</div>
+        <div style={{flex:1,display:"flex",justifyContent:"space-between",fontSize:10,color:T.textTertiary,minWidth:500}}>
+          {ticks.map(w=><span key={w}>Wk {w}</span>)}
+        </div>
+      </div>
+      {positioned.map((r,i)=>{
+        const isActive=activePhase===r.id;
+        const leftPct=(r.start/scale)*100;
+        const widthPct=(r.dur/scale)*100;
+        const isBlocked=r.depStatus.status==="blocked";
+        const isDone=r.pctDone===100;
+        const barColor=isDone?T.green:isActive?T.accent:r.isCritical?T.red:"#d3d3d0";
+        const fillColor=isDone?"rgba(15,123,15,0.3)":isActive?"rgba(35,131,226,0.25)":r.isCritical?"rgba(224,62,62,0.18)":"rgba(0,0,0,0.06)";
+        const labelColor=isDone?T.green:isActive?T.accent:isBlocked?T.textTertiary:T.text;
+        return(
+          <div key={r.id} onClick={()=>onClickPhase(r.id)} style={{display:"flex",alignItems:"center",padding:"4px 0",cursor:"pointer",borderRadius:4,background:isActive?"rgba(35,131,226,0.04)":"transparent",opacity:isBlocked&&!isDone?0.55:1}}>
+            <div style={{width:220,flexShrink:0,display:"flex",alignItems:"center",gap:4,paddingLeft:4}}>
+              <span style={{fontSize:13,fontWeight:isActive?600:400,color:labelColor,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                {r.icon} {r.name}
+              </span>
+              {isBlocked&&!isDone&&<span title={"Waiting on: "+r.depStatus.blockers.join(", ")} style={{fontSize:10,color:T.amber,cursor:"help"}}>blocked</span>}
+              {r.isCritical&&!isDone&&<span style={{fontSize:9,color:T.red,fontWeight:600,letterSpacing:"0.03em"}}>CP</span>}
+            </div>
+            <div style={{flex:1,position:"relative",height:22,minWidth:500}}>
+              <div style={{position:"absolute",left:leftPct+"%",width:Math.max(widthPct,1)+"%",height:"100%",borderRadius:4,background:fillColor,border:"1.5px solid "+barColor,transition:"all 0.3s ease",borderStyle:isBlocked&&!isDone?"dashed":"solid"}}>
+                {r.pctDone>0&&<div style={{height:"100%",width:r.pctDone+"%",background:barColor,borderRadius:3,opacity:0.5,transition:"width 0.3s ease"}}/>}
+                {r.pctDone>0&&r.pctDone<100&&<span style={{position:"absolute",right:4,top:3,fontSize:9,fontWeight:600,color:barColor}}>{r.pctDone}%</span>}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      {/* Long-tail phases as compact summary */}
+      {longTail.length>0&&(
+        <div style={{marginTop:8,padding:"8px 4px",borderTop:"1px dashed "+T.border}}>
+          <div style={{fontSize:11,color:T.textTertiary,marginBottom:4,fontWeight:600}}>Ongoing (post-construction)</div>
+          {longTail.map(p=>{
+            const t=phaseTotals[p.id];
+            const pctDone=t&&t.total>0?Math.round((t.done/t.total)*100):0;
+            const isActive=activePhase===p.id;
+            return(
+              <div key={p.id} onClick={()=>onClickPhase(p.id)} style={{display:"flex",alignItems:"center",gap:8,padding:"3px 4px",cursor:"pointer",borderRadius:4,background:isActive?"rgba(35,131,226,0.04)":"transparent"}}>
+                <span style={{fontSize:13,color:isActive?T.accent:T.text,fontWeight:isActive?600:400}}>{p.icon} {p.name}</span>
+                {t&&t.total>0&&<span style={{fontSize:11,color:T.textTertiary}}>{pctDone}%</span>}
+                <span style={{fontSize:11,color:T.textTertiary}}>ongoing</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FinancialSummary({deal}){
+  const f=calcFinancials(deal);
+  if(!deal.unitCount&&!deal.avgRent&&!deal.purchasePrice)return null;
+  const metrics=[
+    {label:"Gross Monthly Revenue",value:fmt(f.grossMonthly),show:f.grossMonthly>0},
+    {label:"Gross Annual Revenue",value:fmt(f.grossAnnual),show:f.grossAnnual>0},
+    {label:"Net Operating Income (NOI)",value:fmt(f.noi),show:f.noi>0,highlight:true},
+    {label:"Total Project Cost",value:fmt(f.totalProjectCost),show:f.totalProjectCost>0},
+    {label:"Projected Value (NOI ÷ Cap Rate)",value:fmt(f.projectedValue),show:f.projectedValue>0},
+    {label:"Estimated Profit / (Loss)",value:fmt(f.profit),show:f.totalProjectCost>0,color:f.profit>=0?T.green:T.red},
+    {label:"Yield on Cost",value:pct(f.yieldOnCost),show:f.yieldOnCost>0,highlight:true},
+    {label:"Loan Amount",value:fmt(f.loanAmount),show:f.loanAmount>0},
+    {label:"Equity Needed",value:fmt(f.equityNeeded),show:f.equityNeeded>0},
+    {label:"Annual Debt Service",value:fmt(f.annualDebtService),show:f.annualDebtService>0},
+    {label:"DSCR",value:f.dscr.toFixed(2)+"x",show:f.dscr>0},
+    {label:"Cash-on-Cash Return",value:pct(f.coc),show:f.coc!==0,color:f.coc>=0?T.green:T.red},
+  ].filter(m=>m.show);
+  if(metrics.length===0)return null;
+  return(
+    <div style={{background:T.bg,borderRadius:10,boxShadow:T.cardShadow,padding:"16px 20px",marginBottom:20}}>
+      <div style={{fontSize:12,fontWeight:600,color:T.textSecondary,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:12}}>
+        What the Numbers Say
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:"8px 16px"}}>
+        {metrics.map(m=>(
+          <div key={m.label} style={{padding:"8px 0",borderBottom:"1px solid "+T.borderLight}}>
+            <div style={{fontSize:11,color:T.textTertiary}}>{m.label}</div>
+            <div style={{fontSize:16,fontWeight:m.highlight?700:600,color:m.color||T.text,marginTop:2}}>{m.value}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAIN APP
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PERSISTENCE HELPERS
+   ═══════════════════════════════════════════════════════════════════════════ */
+const LS_KEY="buildsheet";
+var _lsWorks=null;
+function lsOk(){
+  if(_lsWorks!==null)return _lsWorks;
+  try{localStorage.setItem("_test","1");localStorage.removeItem("_test");_lsWorks=true;}catch(e){_lsWorks=false;}
+  return _lsWorks;
+}
+function loadAllData(){
+  try{if(!lsOk())return null;const raw=localStorage.getItem(LS_KEY);return raw?JSON.parse(raw):null;}catch(e){return null;}
+}
+function saveAllData(data){
+  try{if(lsOk())localStorage.setItem(LS_KEY,JSON.stringify(data));}catch(e){}
+}
+function newDealState(name){
+  return{id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:name||"Untitled Deal",deal:{},checked:{},notes:{},phaseNotes:{},createdAt:new Date().toISOString()};
+}
+function exportDealJSON(dealState){
+  const blob=new Blob([JSON.stringify(dealState,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download=(dealState.name||"deal").replace(/[^a-zA-Z0-9-_ ]/g,"")+".json";
+  a.click();URL.revokeObjectURL(url);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LANDING PAGE (email gate)
+   ═══════════════════════════════════════════════════════════════════════════ */
+function LandingPage({onUnlock}){
+  const [email,setEmail]=useState("");
+  const [error,setError]=useState("");
+  const formRef=useRef(null);
+  const valid=email.includes("@")&&email.includes(".");
+  const submit=()=>{
+    if(!valid){setError("Enter a valid email to get access.");return;}
+    // POST to Substack in hidden iframe
+    if(formRef.current)formRef.current.submit();
+    if(lsOk()){try{localStorage.setItem("buildsheet_unlocked","true");}catch(e){}}
+    // Small delay so the form POST fires before React unmounts it
+    setTimeout(function(){onUnlock();},300);
+  };
+  return(
+    <div style={{minHeight:"100vh",background:"#f8f8f7",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui,sans-serif"}}>
+      <iframe name="substack_hidden" style={{display:"none"}}></iframe>
+      <div style={{maxWidth:520,width:"100%",padding:"0 24px",textAlign:"center"}}>
+        <div style={{marginBottom:32}}>
+          <div style={{fontSize:40,fontWeight:800,color:"#37352f",letterSpacing:"-0.03em",lineHeight:1.1,marginBottom:8}}>The Build Sheet</div>
+          <div style={{fontSize:16,color:"#787774",lineHeight:1.6,marginBottom:4}}>The free project tracker for small-scale real estate developers.</div>
+          <div style={{fontSize:14,color:"#b0aba5"}}>From dirt to doors. Every phase, every checklist, every number.</div>
+        </div>
+        <div style={{background:"#fff",borderRadius:12,boxShadow:"0 1px 3px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.04)",padding:"32px 28px",marginBottom:24,textAlign:"left"}}>
+          <div style={{fontSize:14,fontWeight:600,color:"#37352f",marginBottom:4}}>Sign up for access</div>
+          <div style={{fontSize:13,color:"#787774",marginBottom:16}}>Enter your email to get started.</div>
+          <form ref={formRef} action="https://chapel.substack.com/api/v1/free" method="POST" target="substack_hidden" onSubmit={e=>e.preventDefault()}>
+            <input type="hidden" name="first_url" value="https://chapel.substack.com/"/>
+            <input type="hidden" name="first_referrer" value=""/>
+            <input type="hidden" name="current_url" value="https://chapel.substack.com/"/>
+            <input type="hidden" name="current_referrer" value=""/>
+            <input type="hidden" name="referral_code" value=""/>
+            <input type="hidden" name="source" value="embed"/>
+            <input name="email" type="email" value={email} onChange={e=>{setEmail(e.target.value);setError("");}}
+              onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();submit();}}}
+              placeholder="you@example.com"
+              style={{width:"100%",padding:"12px 14px",border:"1px solid #e3e2de",borderRadius:8,fontSize:15,color:"#37352f",background:"#f8f8f7",outline:"none",boxSizing:"border-box",marginBottom:error?4:12,fontFamily:"inherit"}}/>
+            {error&&<div style={{fontSize:12,color:"#e03e3e",marginBottom:8}}>{error}</div>}
+          </form>
+          <button onClick={submit} style={{width:"100%",padding:"12px 0",background:"#37352f",color:"#fff",border:"none",borderRadius:8,fontSize:14,fontWeight:600,cursor:"pointer",letterSpacing:"0.01em"}}>
+            Open The Build Sheet
+          </button>
+        </div>
+        <div style={{fontSize:12,color:"#b0aba5",lineHeight:1.5}}>
+          Built by <strong style={{color:"#787774"}}>Matt McPheely</strong>. No spam, just builds.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DEAL PICKER MODAL
+   ═══════════════════════════════════════════════════════════════════════════ */
+function DealPicker({deals,activeDealId,onSelect,onNew,onDelete,onExport,onImport,onClose}){
+  const fileRef=useRef(null);
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.3)"}}>
+      <div style={{background:"#fff",borderRadius:12,boxShadow:"0 8px 30px rgba(0,0,0,0.12)",width:440,maxHeight:"80vh",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        <div style={{padding:"20px 24px 12px",borderBottom:"1px solid #e8e5e0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{fontSize:16,fontWeight:700,color:"#37352f"}}>Your Deals</div>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:"#787774",padding:"2px 6px"}}>x</button>
+        </div>
+        <div style={{flex:1,overflowY:"auto",padding:"8px 16px"}}>
+          {deals.map(d=>(
+            <div key={d.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 8px",borderBottom:"1px solid #f1efe9",cursor:"pointer",background:d.id===activeDealId?"rgba(35,131,226,0.06)":"transparent",borderRadius:6}} onClick={()=>onSelect(d.id)}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:d.id===activeDealId?600:400,color:d.id===activeDealId?"#2383e2":"#37352f"}}>{d.name}</div>
+                <div style={{fontSize:11,color:"#b0aba5"}}>{d.deal.propertyAddress||"No address yet"} {d.deal.propertyCity?("- "+d.deal.propertyCity):""}</div>
+              </div>
+              <button onClick={e=>{e.stopPropagation();onExport(d.id);}} title="Export" style={{background:"#f1f1ef",border:"none",borderRadius:4,padding:"4px 8px",fontSize:11,cursor:"pointer",color:"#787774"}}>Export</button>
+              {deals.length>1&&<button onClick={e=>{e.stopPropagation();if(confirm("Delete "+d.name+"? This cannot be undone."))onDelete(d.id);}} title="Delete" style={{background:"none",border:"none",fontSize:14,cursor:"pointer",color:"#e03e3e",padding:"2px 4px"}}>x</button>}
+            </div>
+          ))}
+        </div>
+        <div style={{padding:"12px 16px",borderTop:"1px solid #e8e5e0",display:"flex",gap:8}}>
+          <button onClick={onNew} style={{flex:1,padding:"10px 0",background:"#37352f",color:"#fff",border:"none",borderRadius:6,fontSize:13,fontWeight:600,cursor:"pointer"}}>+ New Deal</button>
+          <button onClick={()=>fileRef.current.click()} style={{flex:1,padding:"10px 0",background:"#f1f1ef",color:"#37352f",border:"none",borderRadius:6,fontSize:13,fontWeight:600,cursor:"pointer"}}>Import JSON</button>
+          <input ref={fileRef} type="file" accept=".json" style={{display:"none"}} onChange={e=>{
+            const file=e.target.files[0];if(!file)return;
+            const reader=new FileReader();
+            reader.onload=ev=>{try{onImport(JSON.parse(ev.target.result));}catch(err){alert("Invalid file");}};
+            reader.readAsText(file);e.target.value="";
+          }}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAIN APP (with multi-deal + persistence)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function App(){
+  // Email gate
+  const [unlocked,setUnlocked]=useState(()=>{
+    try{return lsOk()&&localStorage.getItem("buildsheet_unlocked")==="true";}catch(e){return false;}
+  });
+
+  // Multi-deal state
+  const [allDeals,setAllDeals]=useState(()=>{
+    const saved=loadAllData();
+    if(saved&&saved.deals&&saved.deals.length>0)return saved.deals;
+    return[newDealState("Deal 1")];
+  });
+  const [activeDealId,setActiveDealId]=useState(()=>{
+    const saved=loadAllData();
+    return(saved&&saved.activeDealId)||(allDeals[0]&&allDeals[0].id)||"";
+  });
+  const [showDealPicker,setShowDealPicker]=useState(false);
+  const [editingDealName,setEditingDealName]=useState(false);
+
+  // Current deal accessors — useMemo to prevent new refs each render
+  const currentDealIdx=allDeals.findIndex(d=>d.id===activeDealId);
+  const currentDealState=allDeals[currentDealIdx]||allDeals[0]||newDealState("Deal 1");
+
+  const deal=useMemo(()=>currentDealState.deal||{},[currentDealState]);
+  const checked=useMemo(()=>currentDealState.checked||EMPTY,[currentDealState]);
+  const notes=useMemo(()=>currentDealState.notes||EMPTY,[currentDealState]);
+  const phaseNotes=useMemo(()=>currentDealState.phaseNotes||EMPTY,[currentDealState]);
+
+  const [activePhase,setActivePhase]=useState(PHASES[0].id);
+  const [view,setView]=useState("phase");
+  const [sidebarOpen,setSidebarOpen]=useState(true);
+  const contentRef=useRef(null);
+
+  // Persist to localStorage on every change
+  useEffect(()=>{
+    saveAllData({deals:allDeals,activeDealId});
+  },[allDeals,activeDealId]);
+
+  useEffect(()=>{if(contentRef.current)contentRef.current.scrollTop=0;},[activePhase]);
+
+  // Update helpers that write into the current deal
+  const updateCurrentDeal=useCallback((fn)=>{
+    setAllDeals(prev=>prev.map(d=>d.id===activeDealId?fn(d):d));
+  },[activeDealId]);
+
+  const setDeal=useCallback(fn=>{
+    updateCurrentDeal(d=>({...d,deal:typeof fn==="function"?fn(d.deal||{}):fn}));
+  },[updateCurrentDeal]);
+  const setChecked=useCallback(fn=>{
+    updateCurrentDeal(d=>({...d,checked:typeof fn==="function"?fn(d.checked||{}):fn}));
+  },[updateCurrentDeal]);
+  const setNotes=useCallback(fn=>{
+    updateCurrentDeal(d=>({...d,notes:typeof fn==="function"?fn(d.notes||{}):fn}));
+  },[updateCurrentDeal]);
+  const setPhaseNotes=useCallback(fn=>{
+    updateCurrentDeal(d=>({...d,phaseNotes:typeof fn==="function"?fn(d.phaseNotes||{}):fn}));
+  },[updateCurrentDeal]);
+
+  const updateDeal=useCallback((k,v)=>setDeal(d=>({...d,[k]:v})),[setDeal]);
+  const toggleCheck=useCallback(k=>setChecked(c=>({...c,[k]:!c[k]})),[setChecked]);
+  const updateNote=useCallback((k,v)=>setNotes(n=>({...n,[k]:v})),[setNotes]);
+  const updatePhaseNote=useCallback((pid,v)=>setPhaseNotes(n=>({...n,[pid]:v})),[setPhaseNotes]);
+
+  // Deal management
+  const createDeal=useCallback(()=>{
+    const nd=newDealState("Deal "+(allDeals.length+1));
+    setAllDeals(prev=>[...prev,nd]);
+    setActiveDealId(nd.id);
+    setShowDealPicker(false);
+    setActivePhase(PHASES[0].id);
+  },[allDeals.length]);
+
+  const deleteDeal=useCallback((id)=>{
+    setAllDeals(prev=>{
+      const next=prev.filter(d=>d.id!==id);
+      if(id===activeDealId&&next.length>0)setActiveDealId(next[0].id);
+      return next;
+    });
+  },[activeDealId]);
+
+  const exportDeal=useCallback((id)=>{
+    const d=allDeals.find(x=>x.id===id);
+    if(d)exportDealJSON(d);
+  },[allDeals]);
+
+  const importDeal=useCallback((data)=>{
+    const nd={...data,id:Date.now().toString(36)+Math.random().toString(36).slice(2,6)};
+    setAllDeals(prev=>[...prev,nd]);
+    setActiveDealId(nd.id);
+    setShowDealPicker(false);
+  },[]);
+
+  const renameDeal=useCallback((name)=>{
+    updateCurrentDeal(d=>({...d,name}));
+    setEditingDealName(false);
+  },[updateCurrentDeal]);
+
+  const phase=PHASES.find(p=>p.id===activePhase);
+  const phaseIdx=PHASES.findIndex(p=>p.id===activePhase);
+
+  const phaseTotals=useMemo(()=>{
+    const t={};
+    PHASES.forEach(p=>{
+      const total=p.checklist.length+(p.guide||[]).length;
+      const done=p.checklist.filter((_,i)=>checked[p.id+"-"+i]).length+(p.guide||[]).filter((_,i)=>checked[p.id+"-guide-"+i]).length;
+      t[p.id]={total,done};
+    });
+    return t;
+  },[checked]);
+
+  const overallTotal=Object.values(phaseTotals).reduce((a,b)=>a+b.total,0);
+  const overallDone=Object.values(phaseTotals).reduce((a,b)=>a+b.done,0);
+  const overallPct=overallTotal>0?Math.round((overallDone/overallTotal)*100):0;
+
+  // Group checklist by category
+  const checklistCats=useMemo(()=>{
+    const cats={};
+    ((phase&&phase.checklist)||[]).forEach((item,i)=>{
+      if(!cats[item.category])cats[item.category]=[];
+      cats[item.category].push({...item,index:i});
+    });
+    return cats;
+  },[phase]);
+
+  // If not unlocked, show landing page (after all hooks)
+  if(!unlocked){
+    return <LandingPage onUnlock={()=>setUnlocked(true)}/>;
+  }
+
+  const fin=calcFinancials(deal);
+
+  return(
+    <div style={{display:"flex",height:"100vh",background:T.pageBg,overflow:"hidden"}}>
+      {/* ═══ SIDEBAR ═══ */}
+      <div style={{width:sidebarOpen?280:0,minWidth:sidebarOpen?280:0,background:T.sidebar,borderRight:"1px solid "+T.sidebarBorder,display:"flex",flexDirection:"column",overflow:"hidden",transition:"all 0.25s ease"}}>
+        <div style={{padding:"20px 16px 8px"}}>
+          <div style={{fontSize:15,fontWeight:700,color:T.text,letterSpacing:"-0.01em"}}>The Build Sheet</div>
+          <div style={{fontSize:12,color:T.textTertiary,marginBottom:12}}>From dirt to doors. Your deal, tracked.</div>
+
+          {/* Deal switcher */}
+          <div style={{padding:"8px 10px",background:T.bg,borderRadius:8,boxShadow:"0 0 0 1px "+T.border,marginBottom:10,cursor:"pointer"}} onClick={()=>setShowDealPicker(true)}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              {editingDealName?(
+                <input autoFocus value={currentDealState.name} onChange={e=>updateCurrentDeal(d=>({...d,name:e.target.value}))}
+                  onBlur={()=>setEditingDealName(false)} onKeyDown={e=>{if(e.key==="Enter")setEditingDealName(false);}}
+                  onClick={e=>e.stopPropagation()}
+                  style={{fontSize:13,fontWeight:600,color:T.text,border:"none",background:"transparent",outline:"none",padding:0,width:"100%",fontFamily:"inherit"}}/>
+              ):(
+                <span style={{fontSize:13,fontWeight:600,color:T.text}} onDoubleClick={e=>{e.stopPropagation();setEditingDealName(true);}}>{currentDealState.name}</span>
+              )}
+              <span style={{fontSize:10,color:T.textTertiary,flexShrink:0,marginLeft:8}}>{allDeals.length} deal{allDeals.length!==1?"s":""} &#9662;</span>
+            </div>
+            {deal.propertyAddress&&<div style={{fontSize:11,color:T.textTertiary,marginTop:2}}>{deal.propertyAddress}{deal.propertyCity?" - "+deal.propertyCity:""}</div>}
+          </div>
+
+          {/* Overall progress */}
+          <div style={{padding:"10px 12px",background:T.bg,borderRadius:8,boxShadow:"0 0 0 1px "+T.border,marginBottom:12}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+              <span style={{fontSize:12,fontWeight:600,color:T.text}}>Your Build</span>
+              <span style={{fontSize:12,fontWeight:600,color:T.accent}}>{overallPct}%</span>
+            </div>
+            <ProgressBar value={overallDone} max={overallTotal} color={T.accent}/>
+            <div style={{fontSize:11,color:T.textTertiary,marginTop:4}}>{overallDone} of {overallTotal} moves made</div>
+          </div>
+
+          {/* View toggle */}
+          <div style={{display:"flex",gap:2,background:T.inputBg,borderRadius:6,padding:2,marginBottom:8}}>
+            {[{k:"phase",l:"Build"},{k:"timeline",l:"Roadmap"},{k:"summary",l:"The Numbers"}].map(v=>(
+              <button key={v.k} onClick={()=>setView(v.k)} style={{
+                flex:1,padding:"6px 0",borderRadius:4,border:"none",fontSize:12,fontWeight:500,cursor:"pointer",
+                background:view===v.k?T.bg:"transparent",color:view===v.k?T.text:T.textTertiary,
+                boxShadow:view===v.k?"0 1px 2px rgba(0,0,0,0.06)":"none",transition:"all 0.15s ease"
+              }}>{v.l}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Phase list */}
+        <div style={{flex:1,overflowY:"auto",padding:"0 8px 16px"}}>
+          {PHASES.map((p,i)=>{
+            const t=phaseTotals[p.id];
+            const isActive=activePhase===p.id;
+            const isDone=t.total>0&&t.done===t.total;
+            return(
+              <div key={p.id} onClick={()=>{setActivePhase(p.id);setView("phase");}} style={{
+                display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:6,cursor:"pointer",
+                background:isActive?"rgba(35,131,226,0.06)":"transparent",transition:"background 0.15s ease"
+              }}>
+                <div style={{
+                  width:28,height:28,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",
+                  fontSize:14,flexShrink:0,
+                  background:isDone?T.greenBg:isActive?T.accentBg:T.inputBg,
+                  color:isDone?T.green:undefined
+                }}>
+                  {isDone?<svg width="14" height="14" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke={T.green} strokeWidth="2" fill="none" strokeLinecap="round"/></svg>:p.icon}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:isActive?600:400,color:isActive?T.accent:T.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
+                  {t.total>0&&(
+                    <div style={{marginTop:3}}>
+                      <ProgressBar value={t.done} max={t.total} color={isDone?T.green:T.accent} height={2}/>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{padding:"10px 16px",borderTop:"1px solid "+T.sidebarBorder,display:"flex",gap:6}}>
+          <button onClick={()=>exportDeal(activeDealId)} style={{flex:1,padding:"6px 0",background:T.inputBg,border:"1px solid "+T.border,borderRadius:4,fontSize:11,cursor:"pointer",color:T.textSecondary}}>Export Deal</button>
+          <button onClick={createDeal} style={{flex:1,padding:"6px 0",background:T.text,border:"none",borderRadius:4,fontSize:11,cursor:"pointer",color:"#fff",fontWeight:600}}>+ New Deal</button>
+        </div>
+        <div style={{padding:"4px 16px 10px",fontSize:10,color:T.textTertiary,lineHeight:1.5}}>
+          Built by Matt McPheely for developers who do the work themselves.
+        </div>
+      </div>
+
+      {/* ═══ MAIN ═══ */}
+      <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        {/* Topbar */}
+        <div style={{display:"flex",alignItems:"center",padding:"10px 24px",borderBottom:"1px solid "+T.border,background:T.bg,gap:12,flexShrink:0}}>
+          <button onClick={()=>setSidebarOpen(!sidebarOpen)} style={{background:"none",border:"1px solid "+T.border,borderRadius:6,color:T.textSecondary,cursor:"pointer",padding:"5px 10px",fontSize:13}}>
+            {sidebarOpen?"☰":"☰"}
+          </button>
+          <div style={{flex:1}}>
+            <span style={{fontSize:11,color:T.textTertiary,textTransform:"uppercase",letterSpacing:"0.06em"}}>
+              {view==="timeline"?"Project Roadmap":view==="summary"?"The Full Picture":"Step "+(phaseIdx+1)+" of "+PHASES.length}
+            </span>
+            {view==="phase"&&<h2 style={{fontSize:18,fontWeight:700,margin:0,color:T.text}}>{phase.icon} {phase.name}</h2>}
+            {view==="timeline"&&<h2 style={{fontSize:18,fontWeight:700,margin:0,color:T.text}}>Project Timeline</h2>}
+            {view==="summary"&&<h2 style={{fontSize:18,fontWeight:700,margin:0,color:T.text}}>Deal Summary & Financials</h2>}
+          </div>
+          {view==="phase"&&(
+            <div style={{display:"flex",gap:6}}>
+              <button onClick={()=>{if(phaseIdx>0)setActivePhase(PHASES[phaseIdx-1].id);}} disabled={phaseIdx===0}
+                style={{background:T.inputBg,border:"1px solid "+T.border,borderRadius:6,color:T.textSecondary,cursor:"pointer",padding:"6px 12px",fontSize:13,opacity:phaseIdx===0?0.4:1}}>
+                ← Back
+              </button>
+              <button onClick={()=>{if(phaseIdx<PHASES.length-1)setActivePhase(PHASES[phaseIdx+1].id);}} disabled={phaseIdx===PHASES.length-1}
+                style={{background:T.accent,border:"none",borderRadius:6,color:"#fff",cursor:"pointer",padding:"6px 14px",fontSize:13,fontWeight:600,opacity:phaseIdx===PHASES.length-1?0.4:1}}>
+                Next →
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Content area */}
+        <div ref={contentRef} style={{flex:1,overflowY:"auto",padding:"24px 32px 64px",maxWidth:860,width:"100%",margin:"0 auto"}}>
+
+          {/* ═══ TIMELINE VIEW ═══ */}
+          {view==="timeline"&&(
+            <div>
+              <div style={{background:T.bg,borderRadius:10,boxShadow:T.cardShadow,padding:"20px 24px",marginBottom:20}}>
+                <GanttChart phases={PHASES} activePhase={activePhase} checked={checked} phaseTotals={phaseTotals} onClickPhase={id=>{setActivePhase(id);setView("phase");}}/>
+              </div>
+              <div style={{background:T.eduBg,border:"1px solid "+T.eduBorder,borderRadius:8,padding:"12px 16px",fontSize:13,color:T.textSecondary,lineHeight:1.6}}>
+                <strong>How to read this:</strong> <span style={{color:T.red,fontWeight:600}}>CP</span> marks the critical path — the chain of phases that determines your total project timeline. Dashed bars are blocked by incomplete prerequisites. Phases overlap on purpose — your pro forma should be running from day one. Click any bar to jump in.
+              </div>
+            </div>
+          )}
+
+          {/* ═══ SUMMARY VIEW ═══ */}
+          {view==="summary"&&(
+            <div>
+              {/* Deal info card */}
+              <div style={{background:T.bg,borderRadius:10,boxShadow:T.cardShadow,padding:"20px 24px",marginBottom:20}}>
+                <div style={{fontSize:12,fontWeight:600,color:T.textSecondary,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:12}}>The Deal at a Glance</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px 24px"}}>
+                  {[
+                    ["Property",deal.propertyAddress],["City",deal.propertyCity],["Asset Type",deal.assetType],["Strategy",deal.targetStrategy],
+                    ["Zoning",deal.currentZoning],["Lot Size",deal.lotSize],["Units",deal.unitCount],["Purchase Price",deal.purchasePrice?fmt(deal.purchasePrice):""],
+                    ["Entity",deal.entityName],["Attorney",deal.attorney],["Architect",deal.architect],["GC",deal.gcName],
+                    ["Lender",deal.lender],["Property Manager",deal.propertyManager]
+                  ].filter(r=>r[1]).map(r=>(
+                    <div key={r[0]} style={{padding:"6px 0",borderBottom:"1px solid "+T.borderLight}}>
+                      <span style={{fontSize:11,color:T.textTertiary}}>{r[0]}: </span>
+                      <span style={{fontSize:13,color:T.text,fontWeight:500}}>{r[1]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <FinancialSummary deal={deal}/>
+              {/* Phase completion */}
+              <div style={{background:T.bg,borderRadius:10,boxShadow:T.cardShadow,padding:"20px 24px"}}>
+                <div style={{fontSize:12,fontWeight:600,color:T.textSecondary,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:12}}>Where You Stand</div>
+                {PHASES.map(p=>{
+                  const t=phaseTotals[p.id];
+                  if(t.total===0)return null;
+                  const pctVal=Math.round((t.done/t.total)*100);
+                  return(
+                    <div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"6px 0"}}>
+                      <span style={{width:180,fontSize:13,color:T.text}}>{p.icon} {p.name}</span>
+                      <div style={{flex:1}}><ProgressBar value={t.done} max={t.total} color={pctVal===100?T.green:T.accent}/></div>
+                      <span style={{fontSize:12,fontWeight:500,color:pctVal===100?T.green:T.textSecondary,width:36,textAlign:"right"}}>{pctVal}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ═══ PHASE VIEW ═══ */}
+          {view==="phase"&&(
+            <div>
+              {/* Summary card */}
+              {(()=>{
+                const depInfo=DEPS[phase.id]||{deps:[],parallel:[]};
+                const status=getPhaseStatus(phase.id,phaseTotals,checked);
+                const depPhases=depInfo.deps.map(d=>PHASES.find(x=>x.id===d)).filter(Boolean);
+                const parPhases=depInfo.parallel.map(d=>PHASES.find(x=>x.id===d)).filter(Boolean);
+                const isCritical=CRITICAL_PATH.includes(phase.id);
+                return(
+                  <div style={{marginBottom:16}}>
+                    <div style={{background:T.bg,borderRadius:10,boxShadow:T.cardShadow,padding:"16px 20px",marginBottom:0}}>
+                      <p style={{fontSize:15,color:T.text,lineHeight:1.65,margin:0}}>{phase.summary}</p>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
+                        <Tag color={T.textSecondary}>~{phase.weeks[0]}-{phase.weeks[1]} weeks</Tag>
+                        {phaseTotals[phase.id].total>0&&<Tag color={T.accent} bg={T.accentBg}>{phaseTotals[phase.id].done}/{phaseTotals[phase.id].total} complete</Tag>}
+                        {isCritical&&<Tag color={T.red} bg={T.redBg}>Critical Path</Tag>}
+                        {status.status==="blocked"&&<Tag color={T.amber} bg={T.amberBg}>Blocked</Tag>}
+                      </div>
+                    </div>
+                    {/* Dependency info bar */}
+                    {(depPhases.length>0||parPhases.length>0)&&(
+                      <div style={{background:T.pageBg,border:"1px solid "+T.border,borderTop:"none",borderRadius:"0 0 10px 10px",padding:"10px 20px",display:"flex",flexWrap:"wrap",gap:16,fontSize:12,color:T.textSecondary}}>
+                        {depPhases.length>0&&(
+                          <div style={{display:"flex",alignItems:"center",gap:4}}>
+                            <span style={{fontWeight:600,color:T.textTertiary}}>Depends on:</span>
+                            {depPhases.map(d=>{
+                              const dt=phaseTotals[d.id];
+                              const done=dt&&dt.total>0&&dt.done>=dt.total;
+                              return <span key={d.id} onClick={()=>setActivePhase(d.id)} style={{cursor:"pointer",padding:"2px 8px",borderRadius:4,background:done?T.greenBg:T.amberBg,color:done?T.green:T.amber,fontWeight:500,fontSize:11}}>{d.icon} {d.name} {done?"Done":"Incomplete"}</span>;
+                            })}
+                          </div>
+                        )}
+                        {parPhases.length>0&&(
+                          <div style={{display:"flex",alignItems:"center",gap:4}}>
+                            <span style={{fontWeight:600,color:T.textTertiary}}>Runs with:</span>
+                            {parPhases.map(d=><span key={d.id} onClick={()=>setActivePhase(d.id)} style={{cursor:"pointer",padding:"2px 8px",borderRadius:4,background:T.accentBg,color:T.accent,fontWeight:500,fontSize:11}}>{d.icon} {d.name}</span>)}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {/* Blocker warning */}
+                    {status.status==="blocked"&&(
+                      <div style={{background:T.redBg,border:"1px solid rgba(224,62,62,0.2)",borderRadius:8,padding:"10px 16px",marginTop:8,display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontSize:16}}>&#9888;</span>
+                        <span style={{fontSize:13,color:T.red,fontWeight:500}}>This phase is waiting on: {status.blockers.join(", ")}. Complete those first to unblock this work.</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Education callout */}
+              {phase.education&&(
+                <div style={{background:T.eduBg,border:"1px solid "+T.eduBorder,borderRadius:8,padding:"14px 18px",marginBottom:16}}>
+                  <div style={{fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",color:T.amber,marginBottom:6}}>
+                    💡 The Real Talk
+                  </div>
+                  <p style={{fontSize:13,color:T.textSecondary,lineHeight:1.65,margin:0}}>{phase.education}</p>
+                </div>
+              )}
+
+              {/* Deal-specific fields */}
+              {phase.dealFields&&phase.dealFields.length>0&&(
+                <div style={{background:T.bg,borderRadius:10,boxShadow:T.cardShadow,padding:"16px 20px",marginBottom:16}}>
+                  <div style={{fontSize:13,fontWeight:600,color:T.text,marginBottom:12,display:"flex",alignItems:"center",gap:6}}>
+                    <span style={{color:T.purple}}>🎯</span> Deal Information
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 16px"}}>
+                    {phase.dealFields.map(f=>(
+                      <Field key={f.key} label={f.label} type={f.type} value={deal[f.key]} onChange={v=>updateDeal(f.key,v)} placeholder={f.placeholder} options={f.options}/>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Financial fields */}
+              {phase.financialFields&&phase.financialFields.length>0&&(
+                <div style={{background:T.bg,borderRadius:10,boxShadow:T.cardShadow,padding:"16px 20px",marginBottom:16}}>
+                  <div style={{fontSize:13,fontWeight:600,color:T.text,marginBottom:12,display:"flex",alignItems:"center",gap:6}}>
+                    <span style={{color:T.green}}>💲</span> Run the Numbers
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 16px"}}>
+                    {phase.financialFields.map(f=>(
+                      <Field key={f.key} label={f.label} type={f.type} value={deal[f.key]} onChange={v=>updateDeal(f.key,v)} placeholder={f.placeholder} options={f.options}/>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Auto-calculated financials */}
+              {phase.calculations&&<FinancialSummary deal={deal}/>}
+
+              {/* Phase progress */}
+              {phaseTotals[phase.id].total>0&&(
+                <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:T.bg,borderRadius:8,boxShadow:T.cardShadow,marginBottom:16}}>
+                  <div style={{flex:1}}>
+                    <ProgressBar value={phaseTotals[phase.id].done} max={phaseTotals[phase.id].total} color={phaseTotals[phase.id].done===phaseTotals[phase.id].total?T.green:T.accent} height={6}/>
+                  </div>
+                  <span style={{fontSize:13,fontWeight:600,color:T.text}}>{phaseTotals[phase.id].done}/{phaseTotals[phase.id].total}</span>
+                </div>
+              )}
+
+              {/* Guide steps */}
+              {phase.guide&&phase.guide.length>0&&(
+                <div style={{background:T.bg,borderRadius:10,boxShadow:T.cardShadow,padding:"16px 20px",marginBottom:16}}>
+                  <div style={{fontSize:13,fontWeight:600,color:T.text,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+                    <span style={{color:T.accent}}>→</span> The Moves
+                  </div>
+                  {phase.guide.map((step,i)=>{
+                    const key=phase.id+"-guide-"+i;
+                    return <Checkbox key={key} checked={!!checked[key]} onClick={()=>toggleCheck(key)} label={step}/>;
+                  })}
+                </div>
+              )}
+
+              {/* DD Checklist */}
+              {phase.checklist.length>0&&(
+                <div style={{background:T.bg,borderRadius:10,boxShadow:T.cardShadow,padding:"16px 20px",marginBottom:16}}>
+                  <div style={{fontSize:13,fontWeight:600,color:T.text,marginBottom:4,display:"flex",alignItems:"center",gap:6}}>
+                    <span style={{color:T.amber}}>☐</span> The Inspection Punch List
+                  </div>
+                  <p style={{fontSize:12,color:T.textTertiary,marginBottom:12,lineHeight:1.5}}>
+                    Confirm each item before removing buyer contingencies.
+                  </p>
+                  {Object.entries(checklistCats).map(([cat,items])=>(
+                    <div key={cat} style={{marginBottom:12}}>
+                      <div style={{fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",color:T.textTertiary,marginBottom:4,paddingLeft:2}}>{cat}</div>
+                      {items.map(item=>{
+                        const key=phase.id+"-"+item.index;
+                        return(
+                          <div key={key}>
+                            <Checkbox checked={!!checked[key]} onClick={()=>toggleCheck(key)} label={item.item}/>
+                            <input type="text" placeholder="Notes..." value={notes[key]||""} onChange={e=>updateNote(key,e.target.value)}
+                              style={{width:"100%",border:"none",borderBottom:"1px solid "+T.borderLight,background:"transparent",fontSize:12,color:T.textSecondary,padding:"2px 0 4px 28px",outline:"none",marginBottom:4}}/>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Phase notes */}
+              <div style={{background:T.bg,borderRadius:10,boxShadow:T.cardShadow,padding:"16px 20px"}}>
+                <div style={{fontSize:13,fontWeight:600,color:T.text,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{color:T.textTertiary}}>✎</span> Field Notes
+                </div>
+                <textarea placeholder={"What you learned, what you need to find out, open threads for "+phase.name+"..."}
+                  value={phaseNotes[phase.id]||""} onChange={e=>updatePhaseNote(phase.id,e.target.value)} rows={4}
+                  style={{width:"100%",background:T.inputBg,border:"1px solid "+T.inputBorder,borderRadius:6,padding:"10px 12px",color:T.text,fontSize:14,lineHeight:1.6,resize:"vertical",outline:"none",boxSizing:"border-box"}}/>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      {/* Deal picker modal */}
+      {showDealPicker&&<DealPicker deals={allDeals} activeDealId={activeDealId}
+        onSelect={id=>{setActiveDealId(id);setShowDealPicker(false);setActivePhase(PHASES[0].id);}}
+        onNew={createDeal} onDelete={deleteDeal} onExport={exportDeal} onImport={importDeal}
+        onClose={()=>setShowDealPicker(false)}/>}
+    </div>
+  );
+}
+
+class ErrorBoundary extends React.Component{
+  constructor(props){super(props);this.state={error:null};}
+  static getDerivedStateFromError(error){return{error};}
+  render(){
+    if(this.state.error)return React.createElement("div",{style:{padding:60,textAlign:"center",fontFamily:"Inter,system-ui,sans-serif",color:"#37352f"}},
+      React.createElement("div",{style:{fontSize:24,fontWeight:700,marginBottom:8}},"Something went wrong"),
+      React.createElement("div",{style:{fontSize:14,color:"#787774",marginBottom:24}},"Try refreshing the page. If the problem persists, clear your browser data for this site."),
+      React.createElement("button",{onClick:function(){window.location.reload();},style:{padding:"10px 24px",background:"#37352f",color:"#fff",border:"none",borderRadius:8,fontSize:14,fontWeight:600,cursor:"pointer"}},"Refresh"));
+    return this.props.children;
+  }
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<ErrorBoundary><App/></ErrorBoundary>);
+</script>
+</body>
+</html>

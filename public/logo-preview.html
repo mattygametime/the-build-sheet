@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<title>Logo Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+body { background: #f7f7f5; display: flex; flex-direction: column; align-items: center; padding: 40px; gap: 60px; font-family: Inter, sans-serif; }
+.preview-box { background: white; border-radius: 12px; padding: 40px 60px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.label { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #999; }
+.dark-bg { background: #1a1a1a; }
+
+/* Wordmark */
+.wordmark { display: flex; align-items: baseline; gap: 0; }
+.wordmark .the { font-size: 28px; font-weight: 400; letter-spacing: 5px; color: #999; text-transform: uppercase; margin-right: 10px; }
+.wordmark .build-sheet { font-size: 28px; font-weight: 800; letter-spacing: 2px; color: #1a1a1a; text-transform: uppercase; position: relative; }
+.wordmark .build-sheet .accent-bar { position: absolute; bottom: -6px; left: 0; height: 3px; background: #E8590C; border-radius: 2px; }
+
+/* Icon */
+.icon { width: 48px; height: 48px; background: #1a1a1a; border-radius: 10px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.icon-letter { font-size: 26px; font-weight: 900; color: white; letter-spacing: -1px; line-height: 1; }
+.icon-bar { position: absolute; bottom: 6px; left: 10px; height: 2.5px; width: 14px; background: #E8590C; border-radius: 2px; }
+.icon-bar-2 { position: absolute; bottom: 6px; left: 26px; height: 2.5px; width: 8px; background: #E8590C; border-radius: 2px; opacity: 0.5; }
+
+.icon-lg { width: 96px; height: 96px; border-radius: 20px; }
+.icon-lg .icon-letter { font-size: 52px; }
+.icon-lg .icon-bar { bottom: 12px; left: 20px; height: 4px; width: 28px; }
+.icon-lg .icon-bar-2 { bottom: 12px; left: 52px; height: 4px; width: 16px; }
+
+/* Favicon size */
+.icon-sm { width: 32px; height: 32px; border-radius: 6px; }
+.icon-sm .icon-letter { font-size: 18px; }
+.icon-sm .icon-bar { bottom: 4px; left: 7px; height: 2px; width: 10px; }
+.icon-sm .icon-bar-2 { bottom: 4px; left: 18px; height: 2px; width: 5px; }
+
+.row { display: flex; gap: 30px; align-items: center; }
+
+/* Landing page mockup */
+.landing-mock { text-align: center; }
+.landing-mock .wordmark { justify-content: center; margin-bottom: 8px; }
+.landing-mock .tagline { font-size: 16px; color: #666; font-weight: 400; }
+</style>
+</head>
+<body>
+
+<div class="preview-box">
+  <div class="label">Wordmark Logo</div>
+  <div class="wordmark">
+    <span class="the">The</span>
+    <span class="build-sheet">
+      Build Sheet
+      <span class="accent-bar" style="width: 60px;"></span>
+    </span>
+  </div>
+</div>
+
+<div class="preview-box">
+  <div class="label">Wordmark — Compact</div>
+  <div class="wordmark" style="font-size: 20px;">
+    <span class="the" style="font-size: 20px;">The</span>
+    <span class="build-sheet" style="font-size: 20px;">
+      Build Sheet
+      <span class="accent-bar" style="width: 42px;"></span>
+    </span>
+  </div>
+</div>
+
+<div class="preview-box">
+  <div class="label">Icon — All Sizes</div>
+  <div class="row">
+    <div>
+      <div class="icon icon-lg">
+        <span class="icon-letter">BS</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar-2"></span>
+      </div>
+      <div class="label" style="text-align:center; margin-top:6px;">96px</div>
+    </div>
+    <div>
+      <div class="icon">
+        <span class="icon-letter">BS</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar-2"></span>
+      </div>
+      <div class="label" style="text-align:center; margin-top:6px;">48px</div>
+    </div>
+    <div>
+      <div class="icon icon-sm">
+        <span class="icon-letter">BS</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar-2"></span>
+      </div>
+      <div class="label" style="text-align:center; margin-top:6px;">32px (favicon)</div>
+    </div>
+  </div>
+</div>
+
+<div class="preview-box" style="width: 500px;">
+  <div class="label">Landing Page Context</div>
+  <div class="landing-mock">
+    <div class="wordmark" style="justify-content:center;">
+      <span class="the" style="font-size: 32px;">The</span>
+      <span class="build-sheet" style="font-size: 32px;">
+        Build Sheet
+        <span class="accent-bar" style="width: 70px;"></span>
+      </span>
+    </div>
+    <div class="tagline">The free project tracker for small-scale real estate developers.</div>
+  </div>
+</div>
+
+<div class="preview-box dark-bg" style="width: 500px;">
+  <div class="label" style="color: #666;">On Dark Background</div>
+  <div class="wordmark">
+    <span class="the" style="color: #777;">The</span>
+    <span class="build-sheet" style="color: #ffffff;">
+      Build Sheet
+      <span class="accent-bar" style="width: 60px;"></span>
+    </span>
+  </div>
+</div>
+
+</body>
+</html>

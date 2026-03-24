@@ -13,6 +13,7 @@
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:title" content="The Build Sheet"/>
 <meta name="twitter:description" content="The free project tracker for small-scale real estate developers. From dirt to doors."/>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='10' fill='%231a1a1a'/%3E%3Ctext x='24' y='33' text-anchor='middle' font-family='Inter,system-ui,sans-serif' font-size='26' font-weight='900' fill='white' letter-spacing='-1'%3EBS%3C/text%3E%3Crect x='10' y='38' width='14' height='2.5' rx='1.25' fill='%23E8590C'/%3E%3Crect x='26' y='38' width='8' height='2.5' rx='1.25' fill='%23E8590C' opacity='0.5'/%3E%3C/svg%3E"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
@@ -705,7 +706,10 @@ function LandingPage({onUnlock}){
       <iframe name="substack_hidden" style={{display:"none"}}></iframe>
       <div style={{maxWidth:520,width:"100%",padding:"0 24px",textAlign:"center"}}>
         <div style={{marginBottom:32}}>
-          <div style={{fontSize:40,fontWeight:800,color:"#37352f",letterSpacing:"-0.03em",lineHeight:1.1,marginBottom:8}}>The Build Sheet</div>
+          <div style={{display:"flex",alignItems:"baseline",justifyContent:"center",gap:0,marginBottom:8}}>
+            <span style={{fontSize:34,fontWeight:400,letterSpacing:5,color:"#999",textTransform:"uppercase",marginRight:10,fontFamily:"'Inter',system-ui,sans-serif"}}>The</span>
+            <span style={{fontSize:34,fontWeight:800,letterSpacing:2,color:"#1a1a1a",textTransform:"uppercase",position:"relative",fontFamily:"'Inter',system-ui,sans-serif"}}>Build Sheet<span style={{position:"absolute",bottom:-6,left:0,height:3,width:60,background:"#E8590C",borderRadius:2}}></span></span>
+          </div>
           <div style={{fontSize:16,color:"#787774",lineHeight:1.6,marginBottom:4}}>The free project tracker for small-scale real estate developers.</div>
           <div style={{fontSize:14,color:"#b0aba5"}}>From dirt to doors. Every phase, every checklist, every number.</div>
         </div>
@@ -916,7 +920,10 @@ function App(){
       {/* ═══ SIDEBAR ═══ */}
       <div style={{width:sidebarOpen?280:0,minWidth:sidebarOpen?280:0,background:T.sidebar,borderRight:"1px solid "+T.sidebarBorder,display:"flex",flexDirection:"column",overflow:"hidden",transition:"all 0.25s ease"}}>
         <div style={{padding:"20px 16px 8px"}}>
-          <div style={{fontSize:15,fontWeight:700,color:T.text,letterSpacing:"-0.01em"}}>The Build Sheet</div>
+          <div style={{display:"flex",alignItems:"baseline",gap:0}}>
+            <span style={{fontSize:13,fontWeight:400,letterSpacing:3,color:"#999",textTransform:"uppercase",marginRight:6}}>The</span>
+            <span style={{fontSize:13,fontWeight:800,letterSpacing:1,color:T.text,textTransform:"uppercase",position:"relative"}}>Build Sheet<span style={{position:"absolute",bottom:-4,left:0,height:2,width:32,background:"#E8590C",borderRadius:1}}></span></span>
+          </div>
           <div style={{fontSize:12,color:T.textTertiary,marginBottom:12}}>From dirt to doors. Your deal, tracked.</div>
 
           {/* Deal switcher */}
